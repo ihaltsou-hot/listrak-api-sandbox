@@ -1,13 +1,69 @@
 package handler
 
 import (
+	"encoding/json"
 	"github.com/go-chi/chi/v5"
 	"listrak-api-sandbox/db"
 	"net/http"
 	"strconv"
 )
 
+type ContactRequest struct {
+	PhoneNumber string `json:"phoneNumber"`
+}
+
 func SmsCreateContact(w http.ResponseWriter, r *http.Request) error {
+	shortCodeStr := chi.URLParam(r, "shortCode")
+	shortCode, err := strconv.Atoi(shortCodeStr)
+	if err != nil {
+		RespondWithError(w, err)
+		return err
+	}
+
+	phoneListSrt := chi.URLParam(r, "phoneList")
+	phoneList, err := strconv.Atoi(phoneListSrt)
+	if err != nil {
+		RespondWithError(w, err)
+		return err
+	}
+
+	var contactReq ContactRequest
+	if err := json.NewDecoder(r.Body).Decode(&contactReq); err != nil {
+		RespondWithError(w, err)
+		return err
+	}
+
+	ctx := r.Context()
+	_, err = db.GetContactByPhone(ctx, shortCode, contactReq.PhoneNumber)
+	if err != nil && err.Error() != "sql: no rows in result set" {
+		RespondWithError(w, err)
+		return err
+	}
+
+	if err == nil {
+		Respond(
+			w,
+			map[string]interface{}{
+				"status":  http.StatusBadRequest,
+				"error":   "ERROR_PENDING_PHONE_NUMBER",
+				"message": "The phone number provided is already pending subscription through double opt in.",
+			},
+			http.StatusBadRequest,
+		)
+		return nil
+	}
+
+	contact, err := db.CreatePendingContact(ctx, shortCode, phoneList, contactReq.PhoneNumber)
+	if err != nil {
+		RespondWithError(w, err)
+		return err
+	}
+
+	responseData := map[string]interface{}{
+		"status":     http.StatusCreated,
+		"resourceId": contact.PhoneNumber,
+	}
+	Respond(w, responseData, http.StatusCreated)
 
 	return nil
 }
@@ -24,7 +80,7 @@ func SmsGetContact(w http.ResponseWriter, r *http.Request) error {
 
 	ctx := r.Context()
 	contact, err := db.GetContactByPhone(ctx, shortCode, phoneNumber)
-	if err != nil {
+	if err != nil && err.Error() == "sql: no rows in result set" {
 		responseData := map[string]interface{}{
 			"status":  http.StatusNotFound,
 			"error":   "ERROR_UNABLE_TO_LOCATE_RESOURCE",
@@ -32,6 +88,8 @@ func SmsGetContact(w http.ResponseWriter, r *http.Request) error {
 		}
 		Respond(w, responseData, http.StatusNotFound)
 		return nil
+	} else if err != nil {
+		RespondWithError(w, err)
 	}
 
 	responseData := map[string]interface{}{
