@@ -20,6 +20,8 @@ func main() {
 
 	router := chi.NewMux()
 
+	router.Post("/OAuth2/Token", handler.Make(handler.CreateOAuthToken))
+
 	router.Post("/sms/v1/ShortCode/{shortCode:[0-9]+}/PhoneList/{phoneList:[0-9]+}/Contact", handler.Make(handler.SmsCreateContact))
 	router.Get("/sms/v1/ShortCode/{shortCode:[0-9]+}/Contact/{phoneNumber:[0-9]{11}}", handler.Make(handler.SmsGetContact))
 	router.Post("/sms/v1/ShortCode/{shortCode:[0-9]+}/Contact/{phoneNumber:[0-9]{11}}/PhoneList/{phoneList:[0-9]+}", handler.Make(handler.SmsSubscribeContact))
