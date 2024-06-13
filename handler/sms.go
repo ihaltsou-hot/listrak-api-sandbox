@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/go-chi/chi/v5"
 	"listrak-api-sandbox/db"
 	"net/http"
@@ -113,11 +114,154 @@ func SmsGetContact(w http.ResponseWriter, r *http.Request) error {
 }
 
 func SmsSubscribeContact(w http.ResponseWriter, r *http.Request) error {
+	shortCodeStr := chi.URLParam(r, "shortCode")
+	shortCode, err := strconv.Atoi(shortCodeStr)
+	if err != nil {
+		RespondWithError(w, err)
+		return err
+	}
+
+	phoneListSrt := chi.URLParam(r, "phoneList")
+	phoneList, err := strconv.Atoi(phoneListSrt)
+	if err != nil {
+		RespondWithError(w, err)
+		return err
+	}
+
+	phoneNumber := chi.URLParam(r, "phoneNumber")
+	if len(phoneNumber) == 0 {
+		err = errors.New("phoneNumber is required")
+		RespondWithError(w, err)
+		return err
+	}
+
+	ctx := r.Context()
+	contact, err := db.GetContactByPhone(ctx, shortCode, phoneNumber)
+	if err != nil && err.Error() == "sql: no rows in result set" {
+		responseData := map[string]interface{}{
+			"status":  http.StatusNotFound,
+			"error":   "ERROR_UNABLE_TO_LOCATE_RESOURCE",
+			"message": "Unable to locate a resource associated with the shortCodeId and phoneNumber supplied.",
+		}
+		Respond(w, responseData, http.StatusNotFound)
+		return nil
+	} else if err != nil {
+		RespondWithError(w, err)
+		return err
+	}
+
+	subscription, err := db.GetContactSubscriptionByPhoneList(ctx, contact.ID, phoneList)
+	if err != nil {
+		RespondWithError(w, err)
+		return err
+	}
+
+	if subscription.PendingDoubleOptIn {
+		responseData := map[string]interface{}{
+			"status":  http.StatusBadRequest,
+			"error":   "ERROR_PENDING_PHONE_NUMBER",
+			"message": "The phone number provided is already pending subscription through double opt in.",
+		}
+		Respond(w, responseData, http.StatusBadRequest)
+		return nil
+	}
+
+	if subscription.Subscribed {
+		responseData := map[string]interface{}{
+			"status":  http.StatusBadRequest,
+			"error":   "ERROR_SUBSCRIBED_PHONE_NUMBER",
+			"message": "The phone number provided is already active subscription.",
+		}
+		Respond(w, responseData, http.StatusBadRequest)
+		return nil
+	}
+
+	subscription.PendingDoubleOptIn = true
+	subscription.Subscribed = true
+
+	err = db.UpdateContactSubscription(ctx, subscription)
+	if err != nil {
+		RespondWithError(w, err)
+		return err
+	}
+
+	responseData := map[string]interface{}{
+		"status":     http.StatusCreated,
+		"resourceId": contact.PhoneNumber,
+	}
+
+	Respond(w, responseData, http.StatusCreated)
 
 	return nil
 }
 
 func SmsUnsubscribeContact(w http.ResponseWriter, r *http.Request) error {
+	shortCodeStr := chi.URLParam(r, "shortCode")
+	shortCode, err := strconv.Atoi(shortCodeStr)
+	if err != nil {
+		RespondWithError(w, err)
+		return err
+	}
+
+	phoneListSrt := chi.URLParam(r, "phoneList")
+	phoneList, err := strconv.Atoi(phoneListSrt)
+	if err != nil {
+		RespondWithError(w, err)
+		return err
+	}
+
+	phoneNumber := chi.URLParam(r, "phoneNumber")
+	if len(phoneNumber) == 0 {
+		err = errors.New("phoneNumber is required")
+		RespondWithError(w, err)
+		return err
+	}
+
+	ctx := r.Context()
+	contact, err := db.GetContactByPhone(ctx, shortCode, phoneNumber)
+	if err != nil && err.Error() == "sql: no rows in result set" {
+		responseData := map[string]interface{}{
+			"status":  http.StatusNotFound,
+			"error":   "ERROR_UNABLE_TO_LOCATE_RESOURCE",
+			"message": "Unable to locate a resource associated with the shortCodeId and phoneNumber supplied.",
+		}
+		Respond(w, responseData, http.StatusNotFound)
+		return nil
+	} else if err != nil {
+		RespondWithError(w, err)
+		return err
+	}
+
+	subscription, err := db.GetContactSubscriptionByPhoneList(ctx, contact.ID, phoneList)
+	if err != nil {
+		RespondWithError(w, err)
+		return err
+	}
+
+	if subscription.PendingDoubleOptIn || !subscription.Subscribed {
+		responseData := map[string]interface{}{
+			"status":  http.StatusBadRequest,
+			"error":   "ERROR_PHONE_NUMBER_NOT_SUBSCRIBED",
+			"message": "The phone number provided is not subscribed to the list.",
+		}
+		Respond(w, responseData, http.StatusBadRequest)
+		return nil
+	}
+
+	subscription.Subscribed = false
+
+	err = db.UpdateContactSubscription(ctx, subscription)
+	if err != nil {
+		RespondWithError(w, err)
+		return err
+	}
+
+	responseData := map[string]interface{}{
+		"status":     http.StatusCreated,
+		"resourceId": contact.PhoneNumber,
+	}
+
+	Respond(w, responseData, http.StatusCreated)
 
 	return nil
 }
@@ -162,13 +306,13 @@ func SmsGetContactListCollection(w http.ResponseWriter, r *http.Request) error {
 				},
 			},
 		}
-		
+
 		Respond(w, responseData, http.StatusOK)
 	} else {
 		subscriptionsData := make([]map[string]interface{}, len(subscriptions))
 		for i, subscription := range subscriptions {
 			subscribedStatus := "Not Subscribed"
-			if subscription.Subscribed {
+			if subscription.Subscribed && !subscription.PendingDoubleOptIn {
 				subscribedStatus = "Subscribed"
 			}
 			subscriptionsData[i] = map[string]interface{}{

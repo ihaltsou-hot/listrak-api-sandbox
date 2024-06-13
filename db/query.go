@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func GetContactByPhone(ctx context.Context, shortCode int, phoneNumber string) (*types.Contact, error) {
+func GetContactByPhone(ctx context.Context, shortCode int, phoneNumber string) (types.Contact, error) {
 	contact := &types.Contact{}
 	err := Bun.NewSelect().
 		Model(contact).
@@ -14,11 +14,11 @@ func GetContactByPhone(ctx context.Context, shortCode int, phoneNumber string) (
 		Where("short_code = ?", shortCode).
 		Scan(ctx)
 
-	return contact, err
+	return *contact, err
 }
 
-func CreatePendingContact(ctx context.Context, shortCode int, phoneList int, phoneNumber string) (*types.Contact, error) {
-	contact := &types.Contact{
+func CreatePendingContact(ctx context.Context, shortCode int, phoneList int, phoneNumber string) (types.Contact, error) {
+	contact := types.Contact{
 		ShortCode:   shortCode,
 		PhoneNumber: phoneNumber,
 	}
@@ -28,7 +28,7 @@ func CreatePendingContact(ctx context.Context, shortCode int, phoneList int, pho
 		Exec(ctx)
 
 	if err != nil {
-		return nil, err
+		return contact, err
 	}
 
 	subscription := &types.Subscription{
@@ -44,13 +44,13 @@ func CreatePendingContact(ctx context.Context, shortCode int, phoneList int, pho
 		Exec(ctx)
 
 	if err != nil {
-		return nil, err
+		return contact, err
 	}
 
 	return contact, nil
 }
 
-func GetSubscriptionsList(ctx context.Context, contact *types.Contact) ([]types.Subscription, error) {
+func GetSubscriptionsList(ctx context.Context, contact types.Contact) ([]types.Subscription, error) {
 	var subscriptions []types.Subscription
 	err := Bun.NewSelect().
 		Model(&subscriptions).
@@ -58,4 +58,24 @@ func GetSubscriptionsList(ctx context.Context, contact *types.Contact) ([]types.
 		Scan(ctx)
 
 	return subscriptions, err
+}
+
+func GetContactSubscriptionByPhoneList(ctx context.Context, contactId int, phoneList int) (types.Subscription, error) {
+	var subscription types.Subscription
+	err := Bun.NewSelect().
+		Model(&subscription).
+		Where("contact_id = ?", contactId).
+		Where("phone_list = ?", phoneList).
+		Scan(ctx)
+
+	return subscription, err
+}
+
+func UpdateContactSubscription(ctx context.Context, subscription types.Subscription) error {
+	_, err := Bun.NewUpdate().
+		Model(&subscription).
+		WherePK().
+		Exec(ctx)
+
+	return err
 }
