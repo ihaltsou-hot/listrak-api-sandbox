@@ -123,6 +123,71 @@ func SmsUnsubscribeContact(w http.ResponseWriter, r *http.Request) error {
 }
 
 func SmsGetContactListCollection(w http.ResponseWriter, r *http.Request) error {
+	shortCodeStr := chi.URLParam(r, "shortCode")
+	phoneNumber := chi.URLParam(r, "phoneNumber")
+
+	shortCode, err := strconv.Atoi(shortCodeStr)
+	if err != nil {
+		RespondWithError(w, err)
+		return err
+	}
+
+	ctx := r.Context()
+	contact, err := db.GetContactByPhone(ctx, shortCode, phoneNumber)
+	if err != nil && err.Error() == "sql: no rows in result set" {
+		responseData := map[string]interface{}{
+			"status":  http.StatusNotFound,
+			"error":   "ERROR_UNABLE_TO_LOCATE_RESOURCE",
+			"message": "Unable to locate a resource associated with the shortCodeId and phoneNumber supplied.",
+		}
+		Respond(w, responseData, http.StatusNotFound)
+		return nil
+	} else if err != nil {
+		RespondWithError(w, err)
+		return err
+	}
+
+	subscriptions, err := db.GetSubscriptionsList(ctx, contact)
+	if len(subscriptions) == 0 {
+		responseData := map[string]interface{}{
+			"status":         http.StatusOK,
+			"nextPageCursor": "",
+			"data": []map[string]interface{}{
+				{
+					"phoneListId":        0,
+					"subscriptionState":  "Not Subscribed",
+					"subscribeDate":      contact.CreatedAt,
+					"pendingDoubleOptIn": false,
+					"pendingAgeGate":     false,
+				},
+			},
+		}
+		
+		Respond(w, responseData, http.StatusOK)
+	} else {
+		subscriptionsData := make([]map[string]interface{}, len(subscriptions))
+		for i, subscription := range subscriptions {
+			subscribedStatus := "Not Subscribed"
+			if subscription.Subscribed {
+				subscribedStatus = "Subscribed"
+			}
+			subscriptionsData[i] = map[string]interface{}{
+				"phoneListId":        subscription.PhoneList,
+				"subscriptionState":  subscribedStatus,
+				"subscribeDate":      contact.CreatedAt,
+				"pendingDoubleOptIn": subscription.PendingDoubleOptIn,
+				"pendingAgeGate":     false,
+			}
+		}
+
+		responseData := map[string]interface{}{
+			"status":         http.StatusOK,
+			"nextPageCursor": "",
+			"data":           subscriptionsData,
+		}
+
+		Respond(w, responseData, http.StatusOK)
+	}
 
 	return nil
 }

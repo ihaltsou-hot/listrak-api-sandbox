@@ -49,3 +49,13 @@ func CreatePendingContact(ctx context.Context, shortCode int, phoneList int, pho
 
 	return contact, nil
 }
+
+func GetSubscriptionsList(ctx context.Context, contact *types.Contact) ([]types.Subscription, error) {
+	var subscriptions []types.Subscription
+	err := Bun.NewSelect().
+		Model(&subscriptions).
+		Where("contact_id = ?", contact.ID).
+		Scan(ctx)
+
+	return subscriptions, err
+}
