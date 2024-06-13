@@ -7,6 +7,7 @@ import (
 	"listrak-api-sandbox/db"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 type ContactRequest struct {
@@ -178,6 +179,7 @@ func SmsSubscribeContact(w http.ResponseWriter, r *http.Request) error {
 
 	subscription.PendingDoubleOptIn = true
 	subscription.Subscribed = true
+	subscription.SubscribeDate = time.Now()
 
 	err = db.UpdateContactSubscription(ctx, subscription)
 	if err != nil {
