@@ -7,14 +7,14 @@ import (
 )
 
 func GetContactByPhone(ctx context.Context, shortCode int, phoneNumber string) (types.Contact, error) {
-	contact := &types.Contact{}
+	contact := types.Contact{}
 	err := Bun.NewSelect().
-		Model(contact).
+		Model(&contact).
 		Where("phone_number = ?", phoneNumber).
 		Where("short_code = ?", shortCode).
 		Scan(ctx)
 
-	return *contact, err
+	return contact, err
 }
 
 func CreatePendingContact(ctx context.Context, shortCode int, phoneList int, phoneNumber string) (types.Contact, error) {
@@ -24,14 +24,14 @@ func CreatePendingContact(ctx context.Context, shortCode int, phoneList int, pho
 	}
 
 	_, err := Bun.NewInsert().
-		Model(contact).
+		Model(&contact).
 		Exec(ctx)
 
 	if err != nil {
 		return contact, err
 	}
 
-	subscription := &types.Subscription{
+	subscription := types.Subscription{
 		ContactId:          contact.ID,
 		PhoneList:          phoneList,
 		Subscribed:         true,
@@ -40,7 +40,7 @@ func CreatePendingContact(ctx context.Context, shortCode int, phoneList int, pho
 	}
 
 	_, err = Bun.NewInsert().
-		Model(subscription).
+		Model(&subscription).
 		Exec(ctx)
 
 	if err != nil {

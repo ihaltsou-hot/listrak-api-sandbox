@@ -32,9 +32,7 @@ func main() {
 }
 
 func initEverything() error {
-	if err := godotenv.Load(); err != nil {
-		return err
-	}
+	_ = godotenv.Load()
 
 	if err := db.Init(); err != nil {
 		return err
