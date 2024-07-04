@@ -79,3 +79,25 @@ func UpdateContactSubscription(ctx context.Context, subscription types.Subscript
 
 	return err
 }
+
+func GetContactsDto(ctx context.Context) ([]types.ContactDto, error) {
+	var contacts []types.Contact
+	err := Bun.NewSelect().
+		Model(&contacts).
+		Scan(ctx)
+
+	contactsDto := make([]types.ContactDto, 0)
+	for _, contact := range contacts {
+		subscriptions, err := GetSubscriptionsList(ctx, contact)
+		if err != nil {
+			return nil, err
+		}
+
+		contactsDto = append(contactsDto, types.ContactDto{
+			Contact:       contact,
+			Subscriptions: subscriptions,
+		})
+	}
+
+	return contactsDto, err
+}

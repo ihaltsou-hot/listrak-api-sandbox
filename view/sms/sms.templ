@@ -1,0 +1,90 @@
+package sms
+
+import (
+    "listrak-api-sandbox/view"
+    "listrak-api-sandbox/view/layout"
+    "listrak-api-sandbox/types"
+)
+
+templ Index(contacts []types.ContactDto) {
+    @layout.App(true) {
+		<div class="max-w-2xl w-full mx-auto mt-8">
+			<div>
+				<h1 class="text-lg font-semibold border-b border-gray-700 pb-2">Contacts</h1>
+			</div>
+			<div>
+            for _, contact := range contacts {
+                @Contact(contact)
+            }
+			</div>
+
+		</div>
+    }
+}
+
+templ Contact(contact types.ContactDto) {
+    <div class="card mt-8 w-100 shadow-xl bg-base-200">
+      <div class="card-body">
+        <div class="card-actions justify-end">
+          <button class="btn btn-square btn-sm">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <h2 class="card-title">{ view.StringToPhone(contact.PhoneNumber) }</h2>
+        if len(contact.Subscriptions) == 0 {
+            @EmptySubscriptions()
+        } else {
+            @Subscriptions(contact.Subscriptions)
+        }
+
+      </div>
+    </div>
+}
+
+templ EmptySubscriptions() {
+    <p class="mt-8">No Subscriptions created for the Contact.</p>
+}
+
+templ Subscriptions(subscriptions []types.Subscription) {
+    <div class="overflow-x-auto">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Phone List</th>
+            <th>Subscribed</th>
+            <th>Pending</th>
+          </tr>
+        </thead>
+        <tbody>
+          for _, subscription := range subscriptions {
+              @Subscription(subscription)
+          }
+        </tbody>
+      </table>
+    </div>
+}
+
+templ Subscription(subscription types.Subscription) {
+    <tr>
+        <th>
+            { view.String(subscription.PhoneList) }
+        </th>
+        <td>
+            <input type="checkbox" class="toggle toggle-primary" checked />
+        </td>
+        <td>
+            <input type="checkbox" class="toggle toggle-primary" />
+        </td>
+    </tr>
+}

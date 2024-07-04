@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"github.com/a-h/templ"
 	"log/slog"
 	"net/http"
 )
@@ -45,4 +46,8 @@ func Respond(w http.ResponseWriter, responseData map[string]interface{}, statusC
 	if err != nil {
 		slog.Error("unable to write response", "err", err)
 	}
+}
+
+func render(w http.ResponseWriter, r *http.Request, component templ.Component) error {
+	return component.Render(r.Context(), w)
 }

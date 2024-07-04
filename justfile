@@ -2,6 +2,17 @@
 default:
   just --list
 
+install:
+	@brew install golang-migrate
+	@go install github.com/a-h/templ/cmd/templ@latest
+	@go install github.com/air-verse/air@latest
+	@go get ./...
+	@go mod vendor
+	@go mod tidy
+	@go mod download
+	@npm install -D tailwindcss
+	@npm install -D daisyui@latest
+
 # Database migration up
 db-up:
 	@go run cmd/migrate/main.go up

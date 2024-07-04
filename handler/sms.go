@@ -3,11 +3,13 @@ package handler
 import (
 	"encoding/json"
 	"errors"
-	"github.com/go-chi/chi/v5"
-	"listrak-api-sandbox/db"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/go-chi/chi/v5"
+	"listrak-api-sandbox/db"
+	"listrak-api-sandbox/view/sms"
 )
 
 type ContactRequest struct {
@@ -336,4 +338,14 @@ func SmsGetContactListCollection(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	return nil
+}
+
+func HandleSmsIndex(w http.ResponseWriter, r *http.Request) error {
+
+	contacts, err := db.GetContactsDto(r.Context())
+	if err != nil {
+		return err
+	}
+
+	return render(w, r, sms.Index(contacts))
 }
