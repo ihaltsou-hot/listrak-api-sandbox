@@ -113,6 +113,7 @@ func GetContactsDto(ctx context.Context) ([]types.ContactDto, error) {
 	var contacts []types.Contact
 	err := Bun.NewSelect().
 		Model(&contacts).
+		Order("created_at DESC").
 		Scan(ctx)
 
 	contactsDto := make([]types.ContactDto, 0)
