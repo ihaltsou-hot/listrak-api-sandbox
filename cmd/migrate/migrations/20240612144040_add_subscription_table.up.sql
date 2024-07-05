@@ -9,7 +9,7 @@ CREATE TABLE subscriptions
     subscribe_date        TIMESTAMP,
     created_at            TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at            TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    CONSTRAINT fk_contact FOREIGN KEY (contact_id) REFERENCES contacts (id)
+    CONSTRAINT fk_contact FOREIGN KEY (contact_id) REFERENCES contacts (id) ON DELETE CASCADE
 );
 
 -- Create an index for searching by contact_id

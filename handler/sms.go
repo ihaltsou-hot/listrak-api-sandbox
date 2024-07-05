@@ -391,3 +391,24 @@ func HandleSubscriptionUpdate(w http.ResponseWriter, r *http.Request) error {
 
 	return render(w, r, sms.Subscription(subscription))
 }
+
+func HandleContactDelete(w http.ResponseWriter, r *http.Request) error {
+	contactIdParam := chi.URLParam(r, "contactId")
+	contactId, err := strconv.Atoi(contactIdParam)
+	if err != nil {
+		return render(w, r, sms.ContactError(err))
+	}
+
+	contact, err := db.GetContactById(r.Context(), contactId)
+	if err != nil {
+		return render(w, r, sms.ContactError(err))
+	}
+
+	err = db.DeleteContact(r.Context(), contact)
+	if err != nil {
+		return render(w, r, sms.ContactError(err))
+	}
+
+	w.WriteHeader(http.StatusOK)
+	return nil
+}

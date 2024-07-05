@@ -17,6 +17,25 @@ func GetContactByPhone(ctx context.Context, shortCode int, phoneNumber string) (
 	return contact, err
 }
 
+func GetContactById(ctx context.Context, contactId int) (types.Contact, error) {
+	contact := types.Contact{}
+	err := Bun.NewSelect().
+		Model(&contact).
+		Where("id = ?", contactId).
+		Scan(ctx)
+
+	return contact, err
+}
+
+func DeleteContact(ctx context.Context, contact types.Contact) error {
+	_, err := Bun.NewDelete().
+		Model(&contact).
+		WherePK().
+		Exec(ctx)
+
+	return err
+}
+
 func CreatePendingContact(ctx context.Context, shortCode int, phoneList int, phoneNumber string) (types.Contact, error) {
 	contact := types.Contact{
 		ShortCode:   shortCode,
