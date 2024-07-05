@@ -3,14 +3,15 @@ package main
 import (
 	"embed"
 	"fmt"
-	"github.com/go-chi/chi/v5"
-	"github.com/joho/godotenv"
-	"listrak-api-sandbox/db"
-	"listrak-api-sandbox/handler"
 	"log"
 	"log/slog"
 	"net/http"
 	"os"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/joho/godotenv"
+	"listrak-api-sandbox/db"
+	"listrak-api-sandbox/handler"
 )
 
 //go:embed public
@@ -35,6 +36,7 @@ func main() {
 	router.Get("/sms/v1/ShortCode/{shortCode:[0-9]+}/Contact/{phoneNumber:[0-9]{11}}/PhoneList", handler.Make(handler.SmsGetContactListCollection))
 
 	router.Get("/sms", handler.Make(handler.HandleSmsIndex))
+	router.Get("/sms/", handler.Make(handler.HandleSmsIndex))
 	router.Put("/sms/subscription/{subscriptionId:[0-9]+}/{fieldName:(subscribed|pending)}/{value:(0|1)}/", handler.Make(handler.HandleSubscriptionUpdate))
 	router.Delete("/sms/contact/{contactId:[0-9]+}/", handler.Make(handler.HandleContactDelete))
 
