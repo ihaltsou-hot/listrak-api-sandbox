@@ -71,6 +71,16 @@ func GetContactSubscriptionByPhoneList(ctx context.Context, contactId int, phone
 	return subscription, err
 }
 
+func GetContactSubscriptionById(ctx context.Context, subscriptionId int) (types.Subscription, error) {
+	var subscription types.Subscription
+	err := Bun.NewSelect().
+		Model(&subscription).
+		Where("id = ?", subscriptionId).
+		Scan(ctx)
+
+	return subscription, err
+}
+
 func UpdateContactSubscription(ctx context.Context, subscription types.Subscription) error {
 	_, err := Bun.NewUpdate().
 		Model(&subscription).

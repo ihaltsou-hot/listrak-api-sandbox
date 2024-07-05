@@ -35,6 +35,7 @@ func main() {
 	router.Get("/sms/v1/ShortCode/{shortCode:[0-9]+}/Contact/{phoneNumber:[0-9]{11}}/PhoneList", handler.Make(handler.SmsGetContactListCollection))
 
 	router.Get("/sms", handler.Make(handler.HandleSmsIndex))
+	router.Put("/sms/subscription/{subscriptionId:[0-9]+}/{fieldName:(subscribed|pending)}/{value:(0|1)}/", handler.Make(handler.HandleSubscriptionUpdate))
 
 	port := fmt.Sprintf(":%s", os.Getenv("PORT"))
 	slog.Info("application running", "port", port)

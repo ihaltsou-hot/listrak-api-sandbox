@@ -1,6 +1,7 @@
 package sms
 
 import (
+    "fmt"
     "listrak-api-sandbox/view"
     "listrak-api-sandbox/view/layout"
     "listrak-api-sandbox/types"
@@ -75,16 +76,75 @@ templ Subscriptions(subscriptions []types.Subscription) {
     </div>
 }
 
+func getSubscriptionID(subscription types.Subscription) string {
+    return fmt.Sprintf("subscription_%d", subscription.ID)
+}
+
+func getSubscriptionUpdateUrl(id int, field string, currentState bool) string {
+	var desiredValue int
+	if currentState {
+		desiredValue = 0
+	} else {
+		desiredValue = 1
+	}
+
+	return fmt.Sprintf(
+		"/sms/subscription/%d/%s/%d/",
+		id,
+		field,
+		desiredValue,
+	)
+}
+
 templ Subscription(subscription types.Subscription) {
-    <tr>
+    <tr id={  getSubscriptionID(subscription) } >
         <th>
             { view.String(subscription.PhoneList) }
         </th>
         <td>
-            <input type="checkbox" class="toggle toggle-primary" checked />
+            <input
+                hx-put={ getSubscriptionUpdateUrl(subscription.ID, "subscribed", subscription.Subscribed) }
+                hx-swap="outerHTML"
+                hx-target={  "#" + getSubscriptionID(subscription) }
+                type="checkbox"
+                class="toggle toggle-primary"
+                if subscription.Subscribed {
+                    checked
+                }
+            />
         </td>
         <td>
-            <input type="checkbox" class="toggle toggle-primary" />
+            <input
+                hx-put={ getSubscriptionUpdateUrl(subscription.ID, "pending", subscription.PendingDoubleOptIn) }
+                hx-swap="outerHTML"
+                hx-target={  "#" + getSubscriptionID(subscription) }
+                type="checkbox"
+                class="toggle toggle-primary"
+                if subscription.PendingDoubleOptIn {
+                    checked
+                }
+            />
         </td>
     </tr>
+}
+
+templ SubscriptionError(err error) {
+     <tr>
+        <td colspan="3">
+            <div role="alert" class="alert alert-error">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-6 w-6 shrink-0 stroke-current"
+                fill="none"
+                viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>{ err.Error() }</span>
+            </div>
+        </td>
+     </tr>
 }

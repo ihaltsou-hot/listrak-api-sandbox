@@ -341,11 +341,53 @@ func SmsGetContactListCollection(w http.ResponseWriter, r *http.Request) error {
 }
 
 func HandleSmsIndex(w http.ResponseWriter, r *http.Request) error {
-
 	contacts, err := db.GetContactsDto(r.Context())
 	if err != nil {
 		return err
 	}
 
 	return render(w, r, sms.Index(contacts))
+}
+
+func HandleSubscriptionUpdate(w http.ResponseWriter, r *http.Request) error {
+	subscriptionIdParam := chi.URLParam(r, "subscriptionId")
+	subscriptionId, err := strconv.Atoi(subscriptionIdParam)
+	if err != nil {
+		return render(w, r, sms.SubscriptionError(err))
+	}
+
+	subscription, err := db.GetContactSubscriptionById(r.Context(), subscriptionId)
+	if err != nil {
+		return render(w, r, sms.SubscriptionError(err))
+	}
+
+	var value bool
+	valueParam := chi.URLParam(r, "value")
+	if valueParam == "1" {
+		value = true
+	} else {
+		value = false
+	}
+
+	fieldNameParam := chi.URLParam(r, "fieldName")
+	if fieldNameParam == "subscribed" {
+		subscription.Subscribed = value
+		if value {
+			subscription.PendingDoubleOptIn = true
+		} else {
+			subscription.PendingDoubleOptIn = false
+		}
+	} else {
+		subscription.PendingDoubleOptIn = value
+		if value {
+			subscription.Subscribed = true
+		}
+	}
+
+	err = db.UpdateContactSubscription(r.Context(), subscription)
+	if err != nil {
+		return render(w, r, sms.SubscriptionError(err))
+	}
+
+	return render(w, r, sms.Subscription(subscription))
 }
