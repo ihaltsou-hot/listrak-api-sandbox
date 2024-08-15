@@ -6,9 +6,9 @@ import (
 )
 
 func StringToPhone(phoneNumber string) string {
-	areaCode := phoneNumber[0:3]
-	prefix := phoneNumber[3:6]
-	lineNumber := phoneNumber[6:10]
+	areaCode := phoneNumber[1:4]
+	prefix := phoneNumber[4:7]
+	lineNumber := phoneNumber[7:11]
 
 	formattedPhoneNumber := fmt.Sprintf("+1 (%s) %s-%s", areaCode, prefix, lineNumber)
 	return formattedPhoneNumber
